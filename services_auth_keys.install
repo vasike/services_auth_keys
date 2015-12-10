@@ -1,0 +1,58 @@
+<?php
+/**
+ * @file
+ * Install file for the services_auth_keys module.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function services_auth_keys_schema() {
+  $schema = array();
+
+  // Create the DB table for the users access keys.
+  $schema['services_auth_keys'] = array(
+    'description' => 'Stores services keys data for users.',
+    'fields' => array(
+      'uid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => 'Primary Key: Unique user ID.',
+        'default' => 0,
+      ),
+      'apy_key' => array(
+        'type' => 'varchar',
+        'length' => 40,
+        'not null' => FALSE,
+        'default' => '',
+        'description' => "User's access apy key.",
+      ),
+      'token' => array(
+        'type' => 'varchar',
+        'length' => 40,
+        'not null' => FALSE,
+        'default' => '',
+        'description' => "User's access token.",
+      ),
+      'extra_key' => array(
+        'type' => 'varchar',
+        'length' => 40,
+        'not null' => FALSE,
+        'default' => '',
+        'description' => "User's access extra key.",
+      ),
+      'updated' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'Timestamp for when keys was generated.',
+      ),
+    ),
+    'unique keys' => array(
+      'keys' => array('api_key', 'token', 'extra_key'),
+    ),
+    'primary key' => array('uid'),
+  );
+  return $schema;
+}
