@@ -21,12 +21,12 @@ function services_auth_keys_schema() {
         'description' => 'Primary Key: Unique user ID.',
         'default' => 0,
       ),
-      'apy_key' => array(
+      'api_key' => array(
         'type' => 'varchar',
         'length' => 40,
         'not null' => FALSE,
         'default' => '',
-        'description' => "User's access apy key.",
+        'description' => "User's access api key.",
       ),
       'token' => array(
         'type' => 'varchar',
