@@ -14,12 +14,25 @@ function services_auth_keys_schema() {
   $schema['services_auth_keys'] = array(
     'description' => 'Stores services keys data for users.',
     'fields' => array(
+      'sak_id' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => 'Primary ID field for the table. Not used for anything except internal lookups.',
+        'default' => 0,
+      ),
       'uid' => array(
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE,
-        'description' => 'Primary Key: Unique user ID.',
+        'description' => 'User ID.',
         'default' => 0,
+      ),
+      'service_endpoint' => array(
+        'description' => 'The name of the service endpoint.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
       ),
       'api_key' => array(
         'type' => 'varchar',
@@ -52,7 +65,11 @@ function services_auth_keys_schema() {
     'unique keys' => array(
       'keys' => array('api_key', 'token', 'extra_key'),
     ),
-    'primary key' => array('uid'),
+    'indexes' => array(
+      'service_endpoint' => array('service_endpoint'),
+      'uid' => array('uid'),
+    ),
+    'primary key' => array('sak_id'),
   );
   return $schema;
 }
