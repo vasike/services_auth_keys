@@ -1,0 +1,8 @@
+name = Services Keys Authetication
+description = Provides Keys authentication for the services module.
+core = 7.x
+package = Services - authentication
+
+; Dependencies
+dependencies[] = services
+
