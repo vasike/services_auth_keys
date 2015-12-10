@@ -3,3 +3,60 @@
  * @file
  * Module file for services_auth_keys module.
  */
+
+/**
+ * Implements hook_services_authentication().
+ */
+function services_auth_keys_services_authentication_info() {
+  return array(
+    'file'             => 'services_auth_keys.inc',
+    'title'            => t('Access Keys authentication'),
+    'description'      => t('Access keys parameter are specified'),
+    'authenticate_call' => '_services_auth_keys_authenticate_call',
+    'default_security_settings' => '_services_auth_keys_default_security_settings',
+    'security_settings' => '_services_auth_keys_security_settings',
+  );
+}
+
+/**
+ * Implements hook_permission().
+ */
+function services_auth_keys_permission() {
+  return array(
+    'services use keys authentication' => array(
+      'title' => t('Use keys authentication'),
+      'description' => t('Allow the user to access services authenticated by its own keys.'),
+    ),
+    'services manage own authentication keys' => array(
+      'title' => t('Manage own authentication keys'),
+      'description' => t('Allow the user to see and change its own authentication keys.'),
+    ),
+  );
+}
+
+/**
+ * Get the keys data or uid based on keys.
+ *
+ * @param array $keys
+ *   Keys array : key => value.
+ *
+ * @param bool $raw_value
+ *   If set to TRUE, the raw user ID will be returned.
+ *
+ * @return mixed
+ *   Array with keys data, or raw user ID, FALSE if not found.
+ */
+function services_auth_keys_load_by_keys($keys, $raw_value = FALSE) {
+  $query = db_select('services_auth_keys', 's');
+  $query->fields('s');
+  foreach ($keys as $key => $value) {
+    $query->condition($key, $value);
+  }
+  $result = $query->execute();
+  $result = $result->fetchAssoc();
+
+  if ($result) {
+    return $raw_value ? $result['uid'] : $result;
+  }
+  return FALSE;
+}

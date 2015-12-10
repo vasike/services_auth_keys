@@ -46,7 +46,7 @@ function services_auth_keys_schema() {
         'type' => 'int',
         'not null' => TRUE,
         'default' => 0,
-        'description' => 'Timestamp for when keys was generated.',
+        'description' => 'Timestamp for when keys were generated.',
       ),
     ),
     'unique keys' => array(
