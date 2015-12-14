@@ -14,7 +14,7 @@ CONTENTS OF THIS FILE
 INTRODUCTION
 ------------
 This module allows site users to authenticate towards a web service, using
-access API keys as API key, token, extra key (secret key).
+API keys parameters as API key, token, extra key (secret key).
 Individual API keys can be generated for each user and API keys access can be
 controlled on a per role basis.
 

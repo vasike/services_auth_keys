@@ -224,3 +224,14 @@ function services_auth_apikeys_generate_extra_key($uid, $service_endpoint) {
   $string = $service_endpoint . $account->name . microtime(TRUE);
   return drupal_hash_base64($string);
 }
+
+/**
+ * Get the default settings if they are no defined yet in the services endpoint.
+ */
+function _services_auth_apikeys_get_authentication_settings($authentication_settings) {
+  // Use default settings if they are no defined yet.
+  if (!is_array($authentication_settings)) {
+    $authetication_settings = _services_auth_apikeys_default_security_settings();
+  }
+  return $authentication_settings;
+}

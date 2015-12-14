@@ -10,27 +10,32 @@
  * @see hook_services_authentication_info()
  */
 function _services_auth_apikeys_authenticate_call($settings, $method, $args) {
+  $authentication_settings = _services_auth_apikeys_get_authentication_settings($settings);
   $apikeys['api_key'] = $settings['api_key']['identifier'];
   $apikeys['token'] = $settings['token']['identifier'];
-  if ($settings['extra_key']['enabled']) {
+  if (!empty($settings['extra_key']) && $settings['extra_key']['enabled']) {
     $apikeys['extra_key'] = $settings['extra_key']['identifier'];
   }
   // Get the API keys sent by services request.
-  foreach ($apikeys as $key => $id) {
-    $http_id = 'HTTP_' . str_replace('-', '_', $id);
+  // For now, only API keys as HTTP Headers are implemented
+  // ToDo: other request parameter types for API keys, ex. GET, values.
+  if ($authentication_settings['parameters_type'] == 'http_headers') {
     $missing_apikeys = array();
-    if (empty($_SERVER[$http_id])) {
-      $missing_apikeys[] = $id;
-    }
-    else {
-      $apikeys_values[$key] = $_SERVER[$http_id];
+    foreach ($apikeys as $apikey => $id) {
+      $http_id = 'HTTP_' . str_replace('-', '_', $id);
+      if (empty($_SERVER[$http_id])) {
+        $missing_apikeys[$apikey] = $id;
+      }
+      else {
+        $apikeys_values[$apikey] = $_SERVER[$http_id];
+      }
     }
   }
   // Return messages for missing API keys.
-  if (!empty($apimissing_keys)) {
-    return t('The service requires data for @apikeys', array('@apikeys' => implode(', ', $missing_apikeys)));
+  if (!empty($missing_apikeys)) {
+    return t('The service requires data for @apikeys.', array('@apikeys' => implode(', ', $missing_apikeys)));
   }
-  // Get the user id for the API keys.
+  // Get the user id for the API keys sent.
   $service_endpoint = services_get_server_info('endpoint');
   $uid = services_auth_apikeys_load_by_apikeys($apikeys_values, $service_endpoint, TRUE);
   if (!$uid) {
@@ -45,8 +50,8 @@ function _services_auth_apikeys_authenticate_call($settings, $method, $args) {
       return t('The user does not exist anymore.');
     }
     // Check if the user has access to the API keys authentication.
-    if (!user_access('services use keys authentication', $user)) {
-      return t('Access denied.') . t('The user with those credentials does not have permissions.');
+    if (!user_access('services use api keys authentication', $user)) {
+      return t('Access denied.') . ' ' . t('The user with these credentials does not have permissions to the services.');
     }
   }
 }
@@ -71,6 +76,7 @@ function _services_auth_apikeys_default_security_settings() {
       'identifier' => 'EXTRA-KEY',
       'generate' => FALSE,
     ),
+    'parameters_type' => 'http_headers',
   );
 }
 
@@ -93,6 +99,7 @@ function _services_auth_apikeys_security_settings($settings, &$form_state) {
     '#title' => t('Identifier'),
     '#description' => t('What identifier do you want to use in the Service API for this key.'),
     '#default_value' => $settings['api_key']['identifier'],
+    '#required' => TRUE,
   );
   $form['api_key']['generate'] = array(
     '#type' => 'checkbox',
@@ -109,6 +116,7 @@ function _services_auth_apikeys_security_settings($settings, &$form_state) {
     '#title' => t('Identifier'),
     '#description' => t('What identifier do you want to use in the Service API for this key.'),
     '#default_value' => $settings['token']['identifier'],
+    '#required' => TRUE,
   );
   $form['token']['generate'] = array(
     '#type' => 'checkbox',
@@ -149,6 +157,12 @@ function _services_auth_apikeys_security_settings($settings, &$form_state) {
   );
   */
 
+  // ToDo : Make selection for the type of API keys parameters.
+  $form['parameters_type'] = array(
+    '#type' => 'value',
+    '#value' => $settings['parameters_type'],
+  );
+
   return $form;
 }
 
@@ -169,11 +183,8 @@ function services_auth_apikeys_user_form($form, &$form_state, $account) {
   // Generate the form, a API keys fieldset for every service endpoint.
   $form = array();
   foreach ($services_endpoints as $services_endpoint_name => $services_endpoint) {
-    $authetication_settings = $services_endpoint->authentication['services_auth_apikeys'];
-    // Use default settings if they are no defined yet.
-    if (!is_array($authetication_settings)) {
-      $authetication_settings = _services_auth_apikeys_default_security_settings();
-    }
+    // Get the authentication settings.
+    $authentication_settings = _services_auth_apikeys_get_authentication_settings($services_endpoint->authentication['services_auth_apikeys']);
     $form[$services_endpoint_name] = array(
       '#type' => 'fieldset',
       '#title' => t('Service endpoint %service', array('%service' => $services_endpoint_name)),
@@ -202,12 +213,12 @@ function services_auth_apikeys_user_form($form, &$form_state, $account) {
 
       $form[$services_endpoint_name]['current_api_key'] = array(
         '#type' => 'item',
-        '#title' => t('API Key (%api_key_identifier)', array('%api_key_identifier' => $authetication_settings['api_key']['identifier'])),
+        '#title' => t('API Key (%api_key_identifier)', array('%api_key_identifier' => $authentication_settings['api_key']['identifier'])),
         '#markup' => '<code>' . $apikeys->api_key . '</code>',
       );
       $form[$services_endpoint_name]['current_token'] = array(
         '#type' => 'item',
-        '#title' => t('Token (%token_identifier)', array('%token_identifier' => $authetication_settings['token']['identifier'])),
+        '#title' => t('Token (%token_identifier)', array('%token_identifier' => $authentication_settings['token']['identifier'])),
         '#markup' => '<code>' . $apikeys->token . '</code>',
       );
 
@@ -224,12 +235,12 @@ function services_auth_apikeys_user_form($form, &$form_state, $account) {
         '#title' => t('Check this box if you want to remove or regenerate API keys.'),
       );
       // The generate button is shown if api key generate option is set.
-      if ($authetication_settings['api_key']['generate']) {
+      if ($authentication_settings['api_key']['generate']) {
         $form[$services_endpoint_name]['generate_api_key'] = array(
           '#type' => 'submit',
           '#name' => $services_endpoint_name . '-generate-api-key',
           '#api_key' => 'api_key',
-          '#value' => t('Generate new API Key (@api_key_identifier)', array('@api_key_identifier' => $authetication_settings['api_key']['identifier'])),
+          '#value' => t('Generate new API Key (@api_key_identifier)', array('@api_key_identifier' => $authentication_settings['api_key']['identifier'])),
           '#submit' => array('_services_auth_apikeys_generate_user_apikeys_service_endpoint_submit'),
           '#states' => array(
             'visible' => array(
@@ -240,12 +251,12 @@ function services_auth_apikeys_user_form($form, &$form_state, $account) {
       }
 
       // The generate button is shown if token generate option is set.
-      if ($authetication_settings['token']['generate']) {
+      if ($authentication_settings['token']['generate']) {
         $form[$services_endpoint_name]['generate_token'] = array(
           '#type' => 'submit',
           '#name' => $services_endpoint_name . '-generate-token',
           '#api_key' => 'token',
-          '#value' => t('Generate new token (@token_identifier)', array('@token_identifier' => $authetication_settings['token']['identifier'])),
+          '#value' => t('Generate new token (@token_identifier)', array('@token_identifier' => $authentication_settings['token']['identifier'])),
           '#submit' => array('_services_auth_apikeys_generate_user_apikeys_service_endpoint_submit'),
           '#states' => array(
             'visible' => array(
@@ -290,12 +301,8 @@ function _services_auth_apikeys_generate_user_apikeys_service_endpoint_submit($f
   if (!empty($button['#api_key'])) {
     services_auth_apikeys_update_apikeys($form_state['values']['uid'], $values['service_endpoint'], array($button['#api_key']));
     $services_endpoint = services_endpoint_load($values['service_endpoint']);
-    $authetication_settings = $services_endpoint->authentication['services_auth_apikeys'];
-    // Use default settings if they are no defined yet.
-    if (!is_array($authetication_settings)) {
-      $authetication_settings = _services_auth_apikeys_default_security_settings();
-    }
-    drupal_set_message(t('The %api_key API key for %service_endpoint service endpoint has been generated.', array('%api_key' => $authetication_settings[$button['#api_key']]['identifier'] . ' (' . $button['#api_key'] . ')', '%service_endpoint' => $values['service_endpoint'])));
+    $authentication_settings = _services_auth_apikeys_get_authentication_settings($services_endpoint->authentication['services_auth_apikeys']);
+    drupal_set_message(t('The %api_key API key for %service_endpoint service endpoint has been generated.', array('%api_key' => $authentication_settings[$button['#api_key']]['identifier'] . ' (' . $button['#api_key'] . ')', '%service_endpoint' => $values['service_endpoint'])));
   }
   // Generate all API keys.
   else {
