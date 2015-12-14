@@ -156,40 +156,28 @@ function services_auth_keys_load_by_keys($keys, $service_endpoint = NULL, $raw_v
  * @param bool $clear
  *   If set to TRUE, the token will be removed instead of updated.
  */
-function services_auth_keys_update_apikeys($uid, $service_endpoint, $clear = FALSE) {
-  // Delete the row.
-  if ($clear) {
-    db_delete('services_auth_keys')
-      ->condition('uid', $uid)
-      ->condition('service_endpoint', $service_endpoint)
-      ->execute();
-    module_invoke_all('services_auth_keys_delete', $uid);
-  }
-  // Or update it with a new value.
-  else {
-    // Generate API keys.
-    do {
-      $apikeys = array(
-        'api_key' => services_auth_keys_generate_api_key($uid, $service_endpoint),
-        'token' => services_auth_keys_generate_token($uid, $service_endpoint),
-      );
+function services_auth_keys_update_apikeys($uid, $service_endpoint, $apikeys = array('api_key', 'token', 'extra_key')) {
+  // Generate API keys.
+  do {
+    foreach ($apikeys as $apikey) {
+      $apikey_value_callback = 'services_auth_keys_generate_' . $apikey;
+      $apikeys_values[$apikey] = $apikey_value_callback($uid, $service_endpoint);
     }
-    while (services_auth_keys_load_by_keys($apikeys, $service_endpoint));
-    $query = db_merge('services_auth_keys')
-      ->key(array(
-        'uid' => $uid,
-        'service_endpoint' => $service_endpoint,
-      ))
-      ->fields(array(
-        'uid' => $uid,
-        'service_endpoint' => $service_endpoint,
-        'api_key' => $apikeys['api_key'],
-        'token' => $apikeys['token'],
-        'updated' => time(),
-      ))
-      ->execute();
-    module_invoke_all('services_auth_keys_update', $uid, $service_endpoint, $apikeys);
   }
+  while (services_auth_keys_load_by_keys($apikeys_values, $service_endpoint));
+  $query_fields = array(
+    'uid' => $uid,
+    'service_endpoint' => $service_endpoint,
+    'updated' => time(),
+  ) + $apikeys_values;
+  $query = db_merge('services_auth_keys')
+    ->key(array(
+      'uid' => $uid,
+      'service_endpoint' => $service_endpoint,
+    ))
+    ->fields($query_fields)
+    ->execute();
+  module_invoke_all('services_auth_keys_update', $uid, $service_endpoint, $apikeys);
 }
 
 /**
@@ -201,7 +189,6 @@ function services_auth_keys_update_apikeys($uid, $service_endpoint, $clear = FAL
  *   Service endpoint name
  */
 function services_auth_keys_delete_apikeys($uid, $service_endpoint = NULL) {
-  // Delete the row.
   $delete_query =  db_delete('services_auth_keys')
     ->condition('uid', $uid);
   if (!empty($service_endpoint)) {
@@ -226,5 +213,14 @@ function services_auth_keys_generate_api_key($uid, $service_endpoint) {
 function services_auth_keys_generate_token($uid, $service_endpoint) {
   $account = user_load($uid);
   $string = $service_endpoint . $account->mail . microtime(TRUE);
+  return drupal_hash_base64($string);
+}
+
+/**
+ * Generates a pseudo-unique extra key string based on user data and service name.
+ */
+function services_auth_keys_generate_extra_key($uid, $service_endpoint) {
+  $account = user_load($uid);
+  $string = $service_endpoint . $account->name . microtime(TRUE);
   return drupal_hash_base64($string);
 }
