@@ -1,4 +1,4 @@
-# services_auth_keys
+# services_auth_apikeys
 README file for Services Keys Authetication
 
 CONTENTS OF THIS FILE
@@ -14,12 +14,12 @@ CONTENTS OF THIS FILE
 INTRODUCTION
 ------------
 This module allows site users to authenticate towards a web service, using
-access keys as API key, token, extra key (secret key).
-Individual keys can be generated for each user and keys access can be
+access API keys as API key, token, extra key (secret key).
+Individual API keys can be generated for each user and API keys access can be
 controlled on a per role basis.
 
-An administrator can revoke all keys at once, and with the "administer users"
-permission, it is possible to assign keys to other users.
+An administrator can revoke all API keys at once, and with the "administer users"
+permission, it is possible to assign API keys to other users.
 
 REQUIREMENTS
 ------------

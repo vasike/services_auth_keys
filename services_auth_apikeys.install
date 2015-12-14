@@ -1,17 +1,17 @@
 <?php
 /**
  * @file
- * Install file for the services_auth_keys module.
+ * Install file for the services_auth_apikeys module.
  */
 
 /**
  * Implements hook_schema().
  */
-function services_auth_keys_schema() {
+function services_auth_apikeys_schema() {
   $schema = array();
 
   // Create the DB table for the users access keys.
-  $schema['services_auth_keys'] = array(
+  $schema['services_auth_apikeys'] = array(
     'description' => 'Stores services keys data for users.',
     'fields' => array(
       'sak_id' => array(

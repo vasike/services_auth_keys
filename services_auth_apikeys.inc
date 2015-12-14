@@ -1,7 +1,7 @@
 <?php
 /**
  * @file
- * Include file for the services_auth_keys module.
+ * Include file for the services_auth_apikeys module.
  */
 
 /**
@@ -9,30 +9,30 @@
  *
  * @see hook_services_authentication_info()
  */
-function _services_auth_keys_authenticate_call($settings, $method, $args) {
-  $keys['api_key'] = $settings['api_key']['identifier'];
-  $keys['token'] = $settings['token']['identifier'];
+function _services_auth_apikeys_authenticate_call($settings, $method, $args) {
+  $apikeys['api_key'] = $settings['api_key']['identifier'];
+  $apikeys['token'] = $settings['token']['identifier'];
   if ($settings['extra_key']['enabled']) {
-    $keys['extra_key'] = $settings['extra_key']['identifier'];
+    $apikeys['extra_key'] = $settings['extra_key']['identifier'];
   }
   // Get the API keys sent by services request.
-  foreach ($keys as $key => $id) {
+  foreach ($apikeys as $key => $id) {
     $http_id = 'HTTP_' . str_replace('-', '_', $id);
-    $missing_keys = array();
+    $missing_apikeys = array();
     if (empty($_SERVER[$http_id])) {
-      $missing_keys[] = $id;
+      $missing_apikeys[] = $id;
     }
     else {
-      $keys_values[$key] = $_SERVER[$http_id];
+      $apikeys_values[$key] = $_SERVER[$http_id];
     }
   }
   // Return messages for missing API keys.
-  if (!empty($missing_keys)) {
-    return t('The service requires data for @keys', array('@keys' => implode(', ', $missing_keys)));
+  if (!empty($apimissing_keys)) {
+    return t('The service requires data for @apikeys', array('@apikeys' => implode(', ', $missing_apikeys)));
   }
   // Get the user id for the API keys.
   $service_endpoint = services_get_server_info('endpoint');
-  $uid = services_auth_keys_load_by_keys($keys_values, $service_endpoint, TRUE);
+  $uid = services_auth_apikeys_load_by_apikeys($apikeys_values, $service_endpoint, TRUE);
   if (!$uid) {
     // Invalid API keys.
     return t('The API keys sent are invalid.');
@@ -56,7 +56,7 @@ function _services_auth_keys_authenticate_call($settings, $method, $args) {
  *
  * @see hook_services_authentication_info()
  */
-function _services_auth_keys_default_security_settings() {
+function _services_auth_apikeys_default_security_settings() {
   return array(
     'api_key' => array(
       'identifier' => 'API-KEY',
@@ -79,7 +79,7 @@ function _services_auth_keys_default_security_settings() {
  *
  * @see hook_services_authentication_info()
  */
-function _services_auth_keys_security_settings($settings, &$form_state) {
+function _services_auth_apikeys_security_settings($settings, &$form_state) {
   $form = array();
   global $user;
 
@@ -155,24 +155,24 @@ function _services_auth_keys_security_settings($settings, &$form_state) {
 /**
  * Form callback for the user API keys management form.
  */
-function services_auth_keys_user_form($form, &$form_state, $account) {
+function services_auth_apikeys_user_form($form, &$form_state, $account) {
   // Get the services endpoints that use this authentication.
   $all_services_endpoints = services_endpoint_load_all();
   foreach ($all_services_endpoints as $services_endpoint) {
-    if (!empty($services_endpoint->authentication['services_auth_keys'])) {
+    if (!empty($services_endpoint->authentication['services_auth_apikeys'])) {
       $services_endpoints[$services_endpoint->name] = $services_endpoint;
     }
   }
   // Get the current API keys if they exist.
-  $existing_keys = services_auth_keys_load_by_user($account->uid);
+  $existing_apikeys = services_auth_apikeys_load_by_user($account->uid);
 
   // Generate the form, a API keys fieldset for every service endpoint.
   $form = array();
   foreach ($services_endpoints as $services_endpoint_name => $services_endpoint) {
-    $authetication_settings = $services_endpoint->authentication['services_auth_keys'];
+    $authetication_settings = $services_endpoint->authentication['services_auth_apikeys'];
     // Use default settings if they are no defined yet.
     if (!is_array($authetication_settings)) {
-      $authetication_settings = _services_auth_keys_default_security_settings();
+      $authetication_settings = _services_auth_apikeys_default_security_settings();
     }
     $form[$services_endpoint_name] = array(
       '#type' => 'fieldset',
@@ -183,17 +183,17 @@ function services_auth_keys_user_form($form, &$form_state, $account) {
       '#type' => 'value',
       '#value' => $services_endpoint_name,
     );
-    if (empty($existing_keys[$services_endpoint_name])) {
+    if (empty($existing_apikeys[$services_endpoint_name])) {
       // The generate button is always shown if no API Keys exist.
       $form[$services_endpoint_name]['generate_apikeys'] = array(
         '#type' => 'submit',
         '#name' => $services_endpoint_name . '-generate-apikeys',
         '#value' => t('Generate new API Keys'),
-        '#submit' => array('_services_auth_keys_generate_user_apikeys_service_endpoint_submit'),
+        '#submit' => array('_services_auth_apikeys_generate_user_apikeys_service_endpoint_submit'),
       );
     }
     else {
-      $apikeys = $existing_keys[$services_endpoint_name];
+      $apikeys = $existing_apikeys[$services_endpoint_name];
       $form[$services_endpoint_name]['apikeys_age'] = array(
         '#type' => 'item',
         '#title' => t('API keys age'),
@@ -230,7 +230,7 @@ function services_auth_keys_user_form($form, &$form_state, $account) {
           '#name' => $services_endpoint_name . '-generate-api-key',
           '#api_key' => 'api_key',
           '#value' => t('Generate new API Key (@api_key_identifier)', array('@api_key_identifier' => $authetication_settings['api_key']['identifier'])),
-          '#submit' => array('_services_auth_keys_generate_user_apikeys_service_endpoint_submit'),
+          '#submit' => array('_services_auth_apikeys_generate_user_apikeys_service_endpoint_submit'),
           '#states' => array(
             'visible' => array(
               '#edit-' . $services_endpoint_name . '-action-check' => array('checked' => TRUE),
@@ -246,7 +246,7 @@ function services_auth_keys_user_form($form, &$form_state, $account) {
           '#name' => $services_endpoint_name . '-generate-token',
           '#api_key' => 'token',
           '#value' => t('Generate new token (@token_identifier)', array('@token_identifier' => $authetication_settings['token']['identifier'])),
-          '#submit' => array('_services_auth_keys_generate_user_apikeys_service_endpoint_submit'),
+          '#submit' => array('_services_auth_apikeys_generate_user_apikeys_service_endpoint_submit'),
           '#states' => array(
             'visible' => array(
               '#edit-' . $services_endpoint_name . '-action-check' => array('checked' => TRUE),
@@ -262,7 +262,7 @@ function services_auth_keys_user_form($form, &$form_state, $account) {
         '#type' => 'submit',
         '#name' => $services_endpoint_name . '-delete',
         '#value' => t('Delete API keys'),
-        '#submit' => array('_services_auth_keys_delete_user_apikeys_service_endpoint_submit'),
+        '#submit' => array('_services_auth_apikeys_delete_user_apikeys_service_endpoint_submit'),
         '#states' => array(
           'visible' => array(
             '#edit-' . $services_endpoint_name . '-action-check' => array('checked' => TRUE),
@@ -283,23 +283,23 @@ function services_auth_keys_user_form($form, &$form_state, $account) {
 /**
  * Submit callback for generating the API Keys.
  */
-function _services_auth_keys_generate_user_apikeys_service_endpoint_submit($form, &$form_state) {
+function _services_auth_apikeys_generate_user_apikeys_service_endpoint_submit($form, &$form_state) {
   $button = $form_state['triggering_element'];
   $values = drupal_array_get_nested_value($form_state['values'], array_slice($button['#array_parents'], 0, -1));
   // Generate one api key.
   if (!empty($button['#api_key'])) {
-    services_auth_keys_update_apikeys($form_state['values']['uid'], $values['service_endpoint'], array($button['#api_key']));
+    services_auth_apikeys_update_apikeys($form_state['values']['uid'], $values['service_endpoint'], array($button['#api_key']));
     $services_endpoint = services_endpoint_load($values['service_endpoint']);
-    $authetication_settings = $services_endpoint->authentication['services_auth_keys'];
+    $authetication_settings = $services_endpoint->authentication['services_auth_apikeys'];
     // Use default settings if they are no defined yet.
     if (!is_array($authetication_settings)) {
-      $authetication_settings = _services_auth_keys_default_security_settings();
+      $authetication_settings = _services_auth_apikeys_default_security_settings();
     }
     drupal_set_message(t('The %api_key API key for %service_endpoint service endpoint has been generated.', array('%api_key' => $authetication_settings[$button['#api_key']]['identifier'] . ' (' . $button['#api_key'] . ')', '%service_endpoint' => $values['service_endpoint'])));
   }
   // Generate all API keys.
   else {
-    services_auth_keys_update_apikeys($form_state['values']['uid'], $values['service_endpoint']);
+    services_auth_apikeys_update_apikeys($form_state['values']['uid'], $values['service_endpoint']);
     drupal_set_message(t('The API keys for %service_endpoint service endpoint has been generated.', array('%service_endpoint' => $values['service_endpoint'])));
   }
 }
@@ -307,9 +307,9 @@ function _services_auth_keys_generate_user_apikeys_service_endpoint_submit($form
 /**
  * Submit callback for API keys deletion.
  */
-function _services_auth_keys_delete_user_apikeys_service_endpoint_submit($form, &$form_state) {
+function _services_auth_apikeys_delete_user_apikeys_service_endpoint_submit($form, &$form_state) {
   $button = $form_state['triggering_element'];
   $values = drupal_array_get_nested_value($form_state['values'], array_slice($button['#array_parents'], 0, -1));
-  services_auth_keys_delete_apikeys($form_state['values']['uid'], $values['service_endpoint']);
+  services_auth_apikeys_delete_apikeys($form_state['values']['uid'], $values['service_endpoint']);
   drupal_set_message(t('The API keys for %service_endpoint service endpoint has been deleted.', array('%service_endpoint' => $values['service_endpoint'])));
 }
