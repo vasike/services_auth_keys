@@ -1,5 +1,5 @@
-name = Services Keys Authetication
-description = Provides Keys authentication for the services module.
+name = Services API Keys Authentication
+description = Provides API keys parameters authentication for the services module.
 core = 7.x
 package = Services - authentication
 
