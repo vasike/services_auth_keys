@@ -77,8 +77,7 @@ function services_auth_apikeys_access($account) {
     return TRUE;
   }
   else {
-    global $user;
-    return $user->uid == $account->uid && user_access('services manage own authentication api keys');
+    return $GLOBALS['user']->uid == $account->uid && user_access('services manage own authentication api keys');
   }
 }
 
