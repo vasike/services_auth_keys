@@ -10,7 +10,13 @@
  * @see hook_services_authentication_info()
  */
 function _services_auth_apikeys_authenticate_call($settings, $method, $args) {
+  // Get the settings.
   $authentication_settings = _services_auth_apikeys_get_authentication_settings($settings);
+  $endpoint = array();
+  // Grep the specific settings for this method
+  if (!empty($method['endpoint']['services_auth_apikeys'])) {
+    $endpoint += array_filter($method['endpoint']['services_auth_apikeys']);
+  }
   $apikeys['api_key'] = $settings['api_key']['identifier'];
   $apikeys['token'] = $settings['token']['identifier'];
   if (!empty($settings['extra_key']) && $settings['extra_key']['enabled']) {
@@ -43,7 +49,6 @@ function _services_auth_apikeys_authenticate_call($settings, $method, $args) {
     return t('The API keys sent are invalid.');
   }
   else {
-    global $user;
     $user = user_load($uid);
     // Check if the user exist.
     if (!$user) {
@@ -52,6 +57,10 @@ function _services_auth_apikeys_authenticate_call($settings, $method, $args) {
     // Check if the user has access to the API keys authentication.
     if (!user_access('services use api keys authentication', $user)) {
       return t('Access denied.') . ' ' . t('The user with these credentials does not have permissions to the services.');
+    }
+    // Login for the API keys owner.
+    if ($authentication_settings['user_login'] || $endpoint['user_login']) {
+      $_GLOBALS['user'] = $user;
     }
   }
 }
@@ -77,6 +86,7 @@ function _services_auth_apikeys_default_security_settings() {
       'generate' => FALSE,
     ),
     'parameters_type' => 'http_headers',
+    'user_login' => FALSE,
   );
 }
 
@@ -161,6 +171,26 @@ function _services_auth_apikeys_security_settings($settings, &$form_state) {
     '#type' => 'value',
     '#value' => $settings['parameters_type'],
   );
+
+  $form['user_login'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Do you want the API keys owner to login?'),
+    '#default_value' => $settings['user_login'],
+  );
+
+  return $form;
+}
+
+function _services_auth_apikeys_controller_settings($settings, $controller, $endpoint, $class, $name) {
+  $form = array();
+  $endpoint_settings = _services_auth_apikeys_get_authentication_settings('');
+  if (empty($endpoint_settings['user_login'])) {
+    $form['user_login'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Do you want the API keys owner to login?'),
+      '#default_value' => isset($settings['user_login']) ? $settings['user_login'] : FALSE,
+    );
+  }
 
   return $form;
 }

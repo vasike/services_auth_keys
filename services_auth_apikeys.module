@@ -15,6 +15,7 @@ function services_auth_apikeys_services_authentication_info() {
     'authenticate_call' => '_services_auth_apikeys_authenticate_call',
     'default_security_settings' => '_services_auth_apikeys_default_security_settings',
     'security_settings' => '_services_auth_apikeys_security_settings',
+    'controller_settings' => '_services_auth_apikeys_controller_settings',
   );
 }
 
