@@ -87,7 +87,6 @@ function _services_auth_apikeys_default_security_settings() {
  */
 function _services_auth_apikeys_security_settings($settings, &$form_state) {
   $form = array();
-  global $user;
 
   // API keys settings.
   $form['api_key'] = array(
