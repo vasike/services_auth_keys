@@ -58,6 +58,23 @@ function _services_auth_apikeys_authenticate_call($settings, $method, $args) {
     if (!user_access('services use api keys authentication', $user)) {
       return t('Access denied.') . ' ' . t('The user with these credentials does not have permissions to the services.');
     }
+    // Check the access to API keys authentication for this use if it is set.
+    if (!empty($endpoint['access'])) {
+      foreach ($user->roles as $role) {
+        if (!empty($endpoint['access'][$role . ' access'])) {
+          $role_access = $endpoint['access'][$role . ' access'];
+        }
+      }
+      switch ($role_access) {
+        case 'disable':
+          return TRUE;
+          break;
+        case 'denied':
+          return t('Access denied.') . ' ' . t('The user with these credentials does not have permissions to the services.');
+          break;
+        default:
+      }
+    }
     // Login for the API keys owner.
     if ($authentication_settings['user_login'] || $endpoint['user_login']) {
       $_GLOBALS['user'] = $user;
@@ -87,6 +104,7 @@ function _services_auth_apikeys_default_security_settings() {
     ),
     'parameters_type' => 'http_headers',
     'user_login' => FALSE,
+    'access' => array(),
   );
 }
 
@@ -189,6 +207,27 @@ function _services_auth_apikeys_controller_settings($settings, $controller, $end
       '#type' => 'checkbox',
       '#title' => t('Do you want the API keys owner to login?'),
       '#default_value' => isset($settings['user_login']) ? $settings['user_login'] : FALSE,
+    );
+  }
+
+  // Access per user roles.
+  $user_roles = user_roles(TRUE, 'services use api keys authentication');
+  $access_options = array(
+    'enable' => t('Authenticate with API Keys'),
+    'disable' => t('No API Keys authentication'),
+    'denied' => t('Access denied'),
+  );
+  $form['access'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Access'),
+    '#tree' => TRUE,
+  );
+  foreach ($user_roles as $key => $role) {
+    $form['access'][$role . ' access'] = array(
+      '#type' => 'select',
+      '#title' => $role,
+      '#options' => $access_options,
+      '#default_value' => isset($settings['access'][$role . ' access']) ? $settings['access'][$role . ' access'] : 'enable',
     );
   }
 
