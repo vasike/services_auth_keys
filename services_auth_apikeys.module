@@ -203,7 +203,7 @@ function services_auth_apikeys_delete_apikeys($uid, $service_endpoint = NULL) {
  */
 function services_auth_apikeys_generate_api_key($uid, $service_endpoint) {
   global $base_url;
-  $string = $base_url . $service_endpoint . $uid . microtime(TRUE);
+  $string = $base_url . $service_endpoint . $uid . drupal_get_hash_salt() . microtime(TRUE);
   return drupal_hash_base64($string);
 }
 
@@ -212,7 +212,7 @@ function services_auth_apikeys_generate_api_key($uid, $service_endpoint) {
  */
 function services_auth_apikeys_generate_token($uid, $service_endpoint) {
   $account = user_load($uid);
-  $string = $service_endpoint . $account->mail . microtime(TRUE);
+  $string = $service_endpoint . $account->mail . drupal_get_hash_salt() . microtime(TRUE);
   return drupal_hash_base64($string);
 }
 
@@ -221,7 +221,7 @@ function services_auth_apikeys_generate_token($uid, $service_endpoint) {
  */
 function services_auth_apikeys_generate_extra_key($uid, $service_endpoint) {
   $account = user_load($uid);
-  $string = $service_endpoint . $account->name . microtime(TRUE);
+  $string = $service_endpoint . $account->name . drupal_get_hash_salt() . microtime(TRUE);
   return drupal_hash_base64($string);
 }
 
