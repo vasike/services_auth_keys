@@ -202,8 +202,7 @@ function services_auth_apikeys_delete_apikeys($uid, $service_endpoint = NULL) {
  * Generates a pseudo-unique api key string based on user data and service name.
  */
 function services_auth_apikeys_generate_api_key($uid, $service_endpoint) {
-  global $base_url;
-  $string = $base_url . $service_endpoint . $uid . microtime(TRUE);
+  $string = $GLOBALS['base_url'] . $service_endpoint . $uid . microtime(TRUE);
   return drupal_hash_base64($string);
 }
 
