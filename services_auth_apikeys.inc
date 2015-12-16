@@ -10,13 +10,19 @@
  * @see hook_services_authentication_info()
  */
 function _services_auth_apikeys_authenticate_call($settings, $method, $args) {
-  // Get the settings.
-  $authentication_settings = _services_auth_apikeys_get_authentication_settings($settings);
   $endpoint = array();
   // Grep the specific settings for this method
   if (!empty($method['endpoint']['services_auth_apikeys'])) {
     $endpoint += array_filter($method['endpoint']['services_auth_apikeys']);
   }
+  // If the authentication is disabled for this method, do nothing.
+  if (!empty($endpoint['disable_authentication'])) {
+    return;
+  }
+
+  // Get the settings for this authentication.
+  $authentication_settings = _services_auth_apikeys_get_authentication_settings($settings);
+
   $apikeys['api_key'] = $settings['api_key']['identifier'];
   $apikeys['token'] = $settings['token']['identifier'];
   if (!empty($settings['extra_key']) && $settings['extra_key']['enabled']) {
@@ -58,6 +64,18 @@ function _services_auth_apikeys_authenticate_call($settings, $method, $args) {
     if (!user_access('services use api keys authentication', $user)) {
       return t('Access denied.') . ' ' . t('The user with these credentials does not have permissions to the services.');
     }
+    // Check the access to API keys authentication for this use if it is set.
+    if (!empty($endpoint['access'])) {
+      $deny_access = FALSE;
+      foreach ($user->roles as $role) {
+        if (!empty($endpoint['access'][$role . ' deny access'])) {
+          $deny_access = TRUE;
+        }
+      }
+      if ($deny_access) {
+        return t('Access denied.') . ' ' . t('The user with these credentials does not have permissions to the services.');
+      }
+    }
     // Login for the API keys owner.
     if ($authentication_settings['user_login'] || $endpoint['user_login']) {
       $_GLOBALS['user'] = $user;
@@ -87,6 +105,7 @@ function _services_auth_apikeys_default_security_settings() {
     ),
     'parameters_type' => 'http_headers',
     'user_login' => FALSE,
+    'access' => array(),
   );
 }
 
@@ -184,11 +203,51 @@ function _services_auth_apikeys_security_settings($settings, &$form_state) {
 function _services_auth_apikeys_controller_settings($settings, $controller, $endpoint, $class, $name) {
   $form = array();
   $endpoint_settings = _services_auth_apikeys_get_authentication_settings('');
+  // Disable API keys authentication.
+  // If disable is set do not display the other controller settings.
+  $disable_class_name = drupal_clean_css_identifier('services_auth_apikeys'. $controller['callback'] . '-' . $class . '-' . $name . '-disable-authentication');
+  $form['disable_authentication'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Disable API keys authentication?'),
+    '#default_value' => isset($settings['disable_authentication']) ? $settings['disable_authentication'] : FALSE,
+    '#attributes' => array('class' => array($disable_class_name)),
+  );
   if (empty($endpoint_settings['user_login'])) {
     $form['user_login'] = array(
       '#type' => 'checkbox',
       '#title' => t('Do you want the API keys owner to login?'),
       '#default_value' => isset($settings['user_login']) ? $settings['user_login'] : FALSE,
+      '#states' => array(
+        'invisible' => array(
+          ':input.' . $disable_class_name => array('checked' => TRUE),
+        ),
+        'visible' => array(
+          ':input.' . $disable_class_name => array('checked' => FALSE),
+        ),
+      ),
+    );
+  }
+
+  // Access per user roles.
+  $user_roles = user_roles(TRUE, 'services use api keys authentication');
+  $form['access'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Access'),
+    '#tree' => TRUE,
+    '#states' => array(
+      'invisible' => array(
+        ':input.' . $disable_class_name => array('checked' => TRUE),
+      ),
+    ),
+    'visible' => array(
+      ':input.' . $disable_class_name => array('checked' => FALSE),
+    ),
+  );
+  foreach ($user_roles as $key => $role) {
+    $form['access'][$role . ' deny access'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Deny access for %role', array('%role' => $role)),
+      '#default_value' => isset($settings['access'][$role . ' deny access']) ? $settings['access'][$role . ' deny access'] : 'enable',
     );
   }
 
