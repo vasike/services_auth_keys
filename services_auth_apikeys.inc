@@ -28,19 +28,29 @@ function _services_auth_apikeys_authenticate_call($settings, $method, $args) {
   if (!empty($authentication_settings['extra_key']) && $authentication_settings['extra_key']['enabled']) {
     $apikeys['extra_key'] = $authentication_settings['extra_key']['identifier'];
   }
-  // Get the API keys sent by services request.
-  // For now, only API keys as HTTP Headers are implemented
-  // ToDo: other request parameter types for API keys, ex. GET, values.
-  if ($authentication_settings['parameters_type'] == 'http_headers') {
-    $missing_apikeys = array();
-    foreach ($apikeys as $apikey => $id) {
-      $http_id = 'HTTP_' . str_replace('-', '_', $id);
-      if (empty($_SERVER[$http_id])) {
-        $missing_apikeys[$apikey] = $id;
-      }
-      else {
-        $apikeys_values[$apikey] = $_SERVER[$http_id];
-      }
+  // Get the API keys sent by services request by they parameter type.
+  $missing_apikeys = array();
+  foreach ($apikeys as $apikey => $id) {
+    switch ($authentication_settings[$apikey]['parameter_type']) {
+      case 'get':
+        $params = $_GET;
+        $param_key = $id;
+        break;
+      case 'post':
+        $params = $_GET;
+        $param_key = $id;
+        break;
+      case 'http_header':
+      default:
+        $params = $_SERVER;
+        $param_key = 'HTTP_' . str_replace('-', '_', $id);
+        break;
+    }
+    if (empty($params[$param_key])) {
+      $missing_apikeys[$apikey] = $id;
+    }
+    else {
+      $apikeys_values[$apikey] = $params[$param_key];
     }
   }
   // Return messages for missing API keys.
@@ -93,17 +103,19 @@ function _services_auth_apikeys_default_security_settings() {
     'api_key' => array(
       'identifier' => 'API-KEY',
       'generate' => FALSE,
+      'parameter_type' => 'http_header',
     ),
     'token' => array(
       'identifier' => 'TOKEN',
       'generate' => TRUE,
+      'parameter_type' => 'http_header',
     ),
     'extra_key' => array(
       'enabled' => FALSE,
       'identifier' => 'EXTRA-KEY',
       'generate' => FALSE,
+      'parameter_type' => 'http_header',
     ),
-    'parameters_type' => 'http_headers',
     'user_login' => FALSE,
   );
 }
@@ -121,6 +133,18 @@ function _services_auth_apikeys_security_settings($settings, &$form_state) {
     '#type' => 'fieldset',
     '#title' => t('API Key'),
   );
+  $parameter_types = array(
+    'http_header' => t('HTTP Header'),
+    'get' => t('GET value'),
+    'post' => t('POST value'),
+  );
+  $form['api_key']['parameter_type'] = array(
+    '#type' => 'select',
+    '#title' => t('Parameter type'),
+    '#description' => t('How this API key should be sent.'),
+    '#options' => $parameter_types,
+    '#default_value' => $settings['api_key']['parameter_type'],
+  );
   $form['api_key']['identifier'] = array(
     '#type' => 'textfield',
     '#title' => t('Identifier'),
@@ -137,6 +161,13 @@ function _services_auth_apikeys_security_settings($settings, &$form_state) {
   $form['token'] = array(
     '#type' => 'fieldset',
     '#title' => t('Token'),
+  );
+  $form['token']['parameter_type'] = array(
+    '#type' => 'select',
+    '#title' => t('Parameter type'),
+    '#description' => t('How this API key should be sent.'),
+    '#options' => $parameter_types,
+    '#default_value' => $settings['token']['parameter_type'],
   );
   $form['token']['identifier'] = array(
     '#type' => 'textfield',
@@ -160,6 +191,18 @@ function _services_auth_apikeys_security_settings($settings, &$form_state) {
     '#title' => t('Do you need an extra key for authentication?'),
     '#default_value' => $settings['extra_key']['enabled'],
   );
+  $form['extra_key']['parameter_type'] = array(
+    '#type' => 'select',
+    '#title' => t('Parameter type'),
+    '#description' => t('How this API key should be sent.'),
+    '#options' => $parameter_types,
+    '#default_value' => $settings['extra_key']['parameter_type'],
+    '#states' => array(
+      'visible' => array(
+        '#edit-services-auth-apikeys-extra-key-enabled' => array('checked' => TRUE),
+      ),
+    ),
+  );
   $form['extra_key']['identifier'] = array(
     '#type' => 'textfield',
     '#title' => t('Identifier'),
@@ -180,12 +223,6 @@ function _services_auth_apikeys_security_settings($settings, &$form_state) {
         '#edit-services-auth-apikeys-extra-key-enabled' => array('checked' => TRUE),
       ),
     ),
-  );
-
-  // ToDo : Make selection for the type of API keys parameters.
-  $form['parameters_type'] = array(
-    '#type' => 'value',
-    '#value' => $settings['parameters_type'],
   );
 
   $form['user_login'] = array(
