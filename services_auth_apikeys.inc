@@ -23,10 +23,10 @@ function _services_auth_apikeys_authenticate_call($settings, $method, $args) {
   // Get the settings for this authentication.
   $authentication_settings = _services_auth_apikeys_get_authentication_settings($settings);
 
-  $apikeys['api_key'] = $settings['api_key']['identifier'];
-  $apikeys['token'] = $settings['token']['identifier'];
-  if (!empty($settings['extra_key']) && $settings['extra_key']['enabled']) {
-    $apikeys['extra_key'] = $settings['extra_key']['identifier'];
+  $apikeys['api_key'] = $authentication_settings['api_key']['identifier'];
+  $apikeys['token'] = $authentication_settings['token']['identifier'];
+  if (!empty($authentication_settings['extra_key']) && $authentication_settings['extra_key']['enabled']) {
+    $apikeys['extra_key'] = $authentication_settings['extra_key']['identifier'];
   }
   // Get the API keys sent by services request.
   // For now, only API keys as HTTP Headers are implemented
@@ -151,7 +151,6 @@ function _services_auth_apikeys_security_settings($settings, &$form_state) {
     '#default_value' => $settings['token']['generate'],
   );
 
-  /*
   $form['extra_key'] = array(
     '#type' => 'fieldset',
     '#title' => t('Extra Key'),
@@ -168,7 +167,7 @@ function _services_auth_apikeys_security_settings($settings, &$form_state) {
     '#default_value' => $settings['extra_key']['identifier'],
     '#states' => array(
       'visible' => array(
-        '#edit-services-auth-keys-extra-key-enabled' => array('checked' => TRUE),
+        '#edit-services-auth-apikeys-extra-key-enabled' => array('checked' => TRUE),
       ),
     ),
   );
@@ -178,11 +177,10 @@ function _services_auth_apikeys_security_settings($settings, &$form_state) {
     '#default_value' => $settings['extra_key']['generate'],
     '#states' => array(
       'visible' => array(
-        '#edit-services-auth-keys-extra-key-enabled' => array('checked' => TRUE),
+        '#edit-services-auth-apikeys-extra-key-enabled' => array('checked' => TRUE),
       ),
     ),
   );
-  */
 
   // ToDo : Make selection for the type of API keys parameters.
   $form['parameters_type'] = array(
@@ -308,6 +306,13 @@ function services_auth_apikeys_user_form($form, &$form_state, $account) {
         '#title' => t('Token (%token_identifier)', array('%token_identifier' => $authentication_settings['token']['identifier'])),
         '#markup' => '<code>' . $apikeys->token . '</code>',
       );
+      if ($authentication_settings['extra_key']['enabled']) {
+        $form[$services_endpoint_name]['current_extra_key'] = array(
+          '#type' => 'item',
+          '#title' => t('Extra key (%extra_key_identifier)', array('%extra_key_identifier' => $authentication_settings['extra_key']['identifier'])),
+          '#markup' => '<code>' . $apikeys->extra_key . '</code>',
+        );
+      }
 
       // Generate / Delete API keys buttons.
       // Warning with checkbox to inform the user before doing risky actions.
@@ -353,7 +358,21 @@ function services_auth_apikeys_user_form($form, &$form_state, $account) {
         );
       }
 
-      // ToDo : Implement extra key.
+      // The generate button is shown if extra key generate option is set.
+      if ($authentication_settings['extra_key']['enabled'] && $authentication_settings['extra_key']['generate']) {
+        $form[$services_endpoint_name]['generate_extra_key'] = array(
+          '#type' => 'submit',
+          '#name' => $services_endpoint_name . '-generate-extra-key',
+          '#api_key' => 'extra_key',
+          '#value' => t('Generate new extra key (@extra_key_identifier)', array('@extra_key_identifier' => $authentication_settings['extra_key']['identifier'])),
+          '#submit' => array('_services_auth_apikeys_generate_user_apikeys_service_endpoint_submit'),
+          '#states' => array(
+            'visible' => array(
+              '#edit-' . $services_endpoint_name . '-action-check' => array('checked' => TRUE),
+            ),
+          ),
+        );
+      }
 
       // Delete (all) API keys button.
       $form[$services_endpoint_name]['delete'] = array(
