@@ -141,7 +141,7 @@ function _services_auth_apikeys_security_settings($settings, &$form_state) {
   $form['api_key']['parameter_type'] = array(
     '#type' => 'select',
     '#title' => t('Parameter type'),
-    '#description' => t('How this API key should be sent.'),
+    '#description' => t('How this API key should be sent in the request.'),
     '#options' => $parameter_types,
     '#default_value' => $settings['api_key']['parameter_type'],
   );
@@ -326,7 +326,14 @@ function services_auth_apikeys_user_form($form, &$form_state, $account) {
       );
     }
     else {
+      // Get the API keys.
       $apikeys = $existing_apikeys[$services_endpoint_name];
+      // Parameter types labels - helper variable.
+      $parameter_types = array(
+        'http_header' => t('HTTP Header'),
+        'get' => t('GET value'),
+        'post' => t('POST value'),
+      );
       $form[$services_endpoint_name]['apikeys_age'] = array(
         '#type' => 'item',
         '#title' => t('API keys age'),
@@ -335,18 +342,18 @@ function services_auth_apikeys_user_form($form, &$form_state, $account) {
 
       $form[$services_endpoint_name]['current_api_key'] = array(
         '#type' => 'item',
-        '#title' => t('API Key (%api_key_identifier)', array('%api_key_identifier' => $authentication_settings['api_key']['identifier'])),
+        '#title' => t('API Key (%api_key_identifier - @parameter_type)', array('%api_key_identifier' => $authentication_settings['api_key']['identifier'], '@parameter_type' => $parameter_types[$authentication_settings['api_key']['parameter_type']])),
         '#markup' => '<code>' . $apikeys->api_key . '</code>',
       );
       $form[$services_endpoint_name]['current_token'] = array(
         '#type' => 'item',
-        '#title' => t('Token (%token_identifier)', array('%token_identifier' => $authentication_settings['token']['identifier'])),
+        '#title' => t('Token (%token_identifier - @parameter_type)', array('%token_identifier' => $authentication_settings['token']['identifier'], '@parameter_type' => $parameter_types[$authentication_settings['token']['parameter_type']])),
         '#markup' => '<code>' . $apikeys->token . '</code>',
       );
       if ($authentication_settings['extra_key']['enabled']) {
         $form[$services_endpoint_name]['current_extra_key'] = array(
           '#type' => 'item',
-          '#title' => t('Extra key (%extra_key_identifier)', array('%extra_key_identifier' => $authentication_settings['extra_key']['identifier'])),
+          '#title' => t('Extra key (%extra_key_identifier - @parameter_type)', array('%extra_key_identifier' => $authentication_settings['extra_key']['identifier'], '@parameter_type' => $parameter_types[$authentication_settings['extra_key']['parameter_type']])),
           '#markup' => '<code>' . $apikeys->extra_key . '</code>',
         );
       }
