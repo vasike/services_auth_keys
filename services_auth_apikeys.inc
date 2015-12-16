@@ -105,7 +105,6 @@ function _services_auth_apikeys_default_security_settings() {
     ),
     'parameters_type' => 'http_headers',
     'user_login' => FALSE,
-    'access' => array(),
   );
 }
 
