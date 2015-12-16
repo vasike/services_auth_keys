@@ -13,8 +13,10 @@ CONTENTS OF THIS FILE
 
 INTRODUCTION
 ------------
-This module allows site users to authenticate towards a web service, using
-API keys parameters for the service requests.
+Extend Services (https://www.drupal.org/project/services) module authentication.
+
+This module allows authentication towards a web service, using API keys parameters
+for the service requests.
 API Keys authentication: check if the provided keys are valid,
 they exist and belong to the right user (role and permission).
 Individual API keys can be generated for each user and API keys authentication
@@ -30,50 +32,50 @@ This module requires the following modules:
 INSTALLATION
 ------------
 * Install as you would normally install a contributed drupal module.
-  See:    https://drupal.org/documentation/install/modules-themes/modules-7
+  See: https://drupal.org/documentation/install/modules-themes/modules-7
   for further information.
 
 
 CONFIGURATION
 -------------
-* Enable "API keys authentication" for a Service Endpoint
-* Authentication (tab) for the Service Endpoint
+* Enable "API keys authentication" for a Service Endpoint.
+* Authentication (tab) for the Service Endpoint.
   3 API keys available : API key, token, extra key (optional).
-  Foreach API key there are some settings that could be configured
+  Foreach API key there are some settings that could be configured:
   - Identifier: What identifier do you want to use in the service request for this key.
   - Generate option: User will be able to update this key - generate new key.
   - Enable Extra key (for Extra key only): to enable a third key if needed.
 * Resources (tab) for the Service Endpoint settings
   Foreach operations there will some settings available to extend the API keys authentication:
-  - Disable API keys authentication: there will be no API keys authentication for this service request
+  - Disable API keys authentication: there will be no API keys authentication for this service request.
   - Owner login: Atfer the authentication the owner of the API keys becomes current user.
-  - Access - Deny Access: available foreach user role with the "Use API keys authentication"
+  - Access - Deny Access: available foreach user role with the "Use API keys authentication" permission.
     It will deny access for the selected user roles.
-* User Services API keys: User API keys management page.
+* User Services API keys (user tab): User API keys management page.
   Foreach service enpoint with "API keys authentication" enabled, we have:
   - Generate API Keys (button) - available only if there is no API keys were defined yet.
   - API Keys : current API keys values and settings.
-  - Checkbox for Delete and Generate button: Extra checkbox for user to validate that it wants
-    to delete/generate the API keys
-  - Generate new API key (button) : available only for the API keys that has this option enabled.
-  - Delete API keys : empty the API keys for the given service endpoint,
+  - Checkbox for Delete and Generate buttons: Extra checkbox for user to validate that it wants
+    to delete/generate the API keys.
+  - Generate new API key (button): available only for the API keys that has this option enabled.
+  - Delete API keys: empty the API keys for the given service endpoint,
     equivalent of disabling the service from user.
 
 
 HOW IT WORKS
 ------------
 Authenticate with User API keys based on the existing configuration.
-There could be 3 cases for the service endpoint request:
+There could be 3 cases for a service endpoint request:
 * No authentication: if it is disabled for the request.
 * API Keys authentication: check if the provided keys are valid,
   they exist and belong to the right user (role and permission).
-  - Owner login: there is an option to login for the API keys owner/user
-* Access denied: no access if the Deny access is set for the reques and user role.
+  - Owner login: there is an option to login for the API keys owner/user.
+* Access denied: no access if the Deny access is set for the service request and user role.
 
 
 TROUBLESHOOTING
 ---------------
-# TODO.
+nothing yet.
 
 
 MAINTAINERS
