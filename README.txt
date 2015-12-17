@@ -57,11 +57,16 @@ CONFIGURATION
   Foreach service enpoint with "API keys authentication" enabled, we have:
   - Generate API Keys (button) - available only if there is no API keys were defined yet.
   - API Keys : current API keys values and settings.
-  - Checkbox for Delete and Generate buttons: Extra checkbox for user to validate that it wants
-    to delete/generate the API keys.
+  - Operate on existing API keys: Extra checkbox for user to validate that it wants
+    to edit/delete/generate the API keys.
   - Generate new API key (button): available only for the API keys that has this option enabled.
   - Delete API keys: empty the API keys for the given service endpoint,
     equivalent of disabling the service from user.
+  - Edit manually: checkbox to allow manual eidting of the API keys.
+  - Edit (manually) API Keys (subform): a sub(form) for editing manually the existing API keys.
+    This is available only if the "Edit manually" checkbox is checked.
+    Every API key element has validation so the values should meet be as the one generated.
+    @see drupal_hash_base64().
 
 
 HOW IT WORKS
