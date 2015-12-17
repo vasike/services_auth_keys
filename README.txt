@@ -42,7 +42,7 @@ CONFIGURATION
 * Authentication (tab) for the Service Endpoint.
   3 API keys available : API key, token, extra key (optional).
   Foreach API key there are some settings that could be configured:
-  - Parameter type: How this API key should be sent in the request
+  - Parameter type: How this API key should be sent in the request,
     for example: GET, POST, HTTP Header.
   - Identifier: What identifier do you want to use in the service request for this key.
   - Generate option: User will be able to update this key - generate new key.

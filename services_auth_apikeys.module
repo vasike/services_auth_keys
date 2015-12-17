@@ -154,17 +154,21 @@ function services_auth_apikeys_load_by_apikeys($apikeys, $service_endpoint = NUL
  * @param string $service_endpoint
  *   Service endpoint name
  * @param array $apikeys
- *   The API keys array needed to be update/generated.
+ *   The API keys array needed to be updated/generated.
+ * @param array $apikeys_values
+ *   The API keys values array needed to be updated.
  */
-function services_auth_apikeys_update_apikeys($uid, $service_endpoint, $apikeys = array('api_key', 'token', 'extra_key')) {
-  // Generate API keys.
-  do {
-    foreach ($apikeys as $apikey) {
-      $apikey_value_callback = 'services_auth_apikeys_generate_' . $apikey;
-      $apikeys_values[$apikey] = $apikey_value_callback($uid, $service_endpoint);
+function services_auth_apikeys_update_apikeys($uid, $service_endpoint, $apikeys = array('api_key', 'token', 'extra_key'), $apikeys_values = array()) {
+  // No API keys values set, generate new API keys.
+  if (empty($apikeys_values)) {
+    do {
+      foreach ($apikeys as $apikey) {
+        $apikey_value_callback = 'services_auth_apikeys_generate_' . $apikey;
+        $apikeys_values[$apikey] = $apikey_value_callback($uid, $service_endpoint);
+      }
     }
+    while (services_auth_apikeys_load_by_apikeys($apikeys_values, $service_endpoint));
   }
-  while (services_auth_apikeys_load_by_apikeys($apikeys_values, $service_endpoint));
   $query_fields = array(
     'uid' => $uid,
     'service_endpoint' => $service_endpoint,
@@ -177,7 +181,7 @@ function services_auth_apikeys_update_apikeys($uid, $service_endpoint, $apikeys 
     ))
     ->fields($query_fields)
     ->execute();
-  module_invoke_all('services_auth_apikeys_update', $uid, $service_endpoint, $apikeys);
+  module_invoke_all('services_auth_apikeys_update', $uid, $service_endpoint, $apikeys_values);
 }
 
 /**

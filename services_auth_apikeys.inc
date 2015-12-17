@@ -342,18 +342,23 @@ function services_auth_apikeys_user_form($form, &$form_state, $account) {
 
       $form[$services_endpoint_name]['current_api_key'] = array(
         '#type' => 'item',
-        '#title' => t('API Key (%api_key_identifier - @parameter_type)', array('%api_key_identifier' => $authentication_settings['api_key']['identifier'], '@parameter_type' => $parameter_types[$authentication_settings['api_key']['parameter_type']])),
+        '#title' => t('API Key (%identifier - @parameter_type)', array('%identifier' => $authentication_settings['api_key']['identifier'], '@parameter_type' => $parameter_types[$authentication_settings['api_key']['parameter_type']])),
         '#markup' => '<code>' . $apikeys->api_key . '</code>',
+        '#states' => array(
+          'enabled' => array(
+            '#edit-' . $services_endpoint_name . '-action-check' => array('checked' => TRUE),
+          ),
+        ),
       );
       $form[$services_endpoint_name]['current_token'] = array(
         '#type' => 'item',
-        '#title' => t('Token (%token_identifier - @parameter_type)', array('%token_identifier' => $authentication_settings['token']['identifier'], '@parameter_type' => $parameter_types[$authentication_settings['token']['parameter_type']])),
+        '#title' => t('Token (%identifier - @parameter_type)', array('%identifier' => $authentication_settings['token']['identifier'], '@parameter_type' => $parameter_types[$authentication_settings['token']['parameter_type']])),
         '#markup' => '<code>' . $apikeys->token . '</code>',
       );
       if ($authentication_settings['extra_key']['enabled']) {
         $form[$services_endpoint_name]['current_extra_key'] = array(
           '#type' => 'item',
-          '#title' => t('Extra key (%extra_key_identifier - @parameter_type)', array('%extra_key_identifier' => $authentication_settings['extra_key']['identifier'], '@parameter_type' => $parameter_types[$authentication_settings['extra_key']['parameter_type']])),
+          '#title' => t('Extra key (%identifier - @parameter_type)', array('%identifier' => $authentication_settings['extra_key']['identifier'], '@parameter_type' => $parameter_types[$authentication_settings['extra_key']['parameter_type']])),
           '#markup' => '<code>' . $apikeys->extra_key . '</code>',
         );
       }
@@ -363,20 +368,24 @@ function services_auth_apikeys_user_form($form, &$form_state, $account) {
       $form[$services_endpoint_name]['warning'] = array(
         '#type' => 'item',
         '#title' => t('Warning'),
-        '#markup' => t('Generating or removing API keys may results in issues elsewhere. Make sure that all external systems that uses these API Keys are updated as well, as soon as a new API keys are generated.'),
+        '#markup' => t('Generating, editing or removing API keys may results in issues elsewhere. Make sure that all external systems that uses these API Keys are updated as well, as soon as a new API keys are generated.'),
       );
       // The remove/generate buttons are only shown if the checkbox is checked.
       $form[$services_endpoint_name]['action_check'] = array(
         '#type' => 'checkbox',
-        '#title' => t('Check this box if you want to remove or regenerate API keys.'),
+        '#title' => t('Operate on existing API keys.'),
+        '#description' => t('Check this box if you want to remove or regenerate API keys.'),
       );
+
+      $limit_validation_errors = array(array('uid'), array($services_endpoint_name, 'service_endpoint'));
       // The generate button is shown if api key generate option is set.
       if ($authentication_settings['api_key']['generate']) {
         $form[$services_endpoint_name]['generate_api_key'] = array(
           '#type' => 'submit',
           '#name' => $services_endpoint_name . '-generate-api-key',
           '#api_key' => 'api_key',
-          '#value' => t('Generate new API Key (@api_key_identifier)', array('@api_key_identifier' => $authentication_settings['api_key']['identifier'])),
+          '#value' => t('Generate new API Key (@identifier)', array('@identifier' => $authentication_settings['api_key']['identifier'])),
+          '#limit_validation_errors' => $limit_validation_errors,
           '#submit' => array('_services_auth_apikeys_generate_user_apikeys_service_endpoint_submit'),
           '#states' => array(
             'visible' => array(
@@ -392,7 +401,8 @@ function services_auth_apikeys_user_form($form, &$form_state, $account) {
           '#type' => 'submit',
           '#name' => $services_endpoint_name . '-generate-token',
           '#api_key' => 'token',
-          '#value' => t('Generate new token (@token_identifier)', array('@token_identifier' => $authentication_settings['token']['identifier'])),
+          '#value' => t('Generate new token (@identifier)', array('@identifier' => $authentication_settings['token']['identifier'])),
+          '#limit_validation_errors' => $limit_validation_errors,
           '#submit' => array('_services_auth_apikeys_generate_user_apikeys_service_endpoint_submit'),
           '#states' => array(
             'visible' => array(
@@ -408,7 +418,8 @@ function services_auth_apikeys_user_form($form, &$form_state, $account) {
           '#type' => 'submit',
           '#name' => $services_endpoint_name . '-generate-extra-key',
           '#api_key' => 'extra_key',
-          '#value' => t('Generate new extra key (@extra_key_identifier)', array('@extra_key_identifier' => $authentication_settings['extra_key']['identifier'])),
+          '#value' => t('Generate new extra key (@identifier)', array('@identifier' => $authentication_settings['extra_key']['identifier'])),
+          '#limit_validation_errors' => $limit_validation_errors,
           '#submit' => array('_services_auth_apikeys_generate_user_apikeys_service_endpoint_submit'),
           '#states' => array(
             'visible' => array(
@@ -423,12 +434,68 @@ function services_auth_apikeys_user_form($form, &$form_state, $account) {
         '#type' => 'submit',
         '#name' => $services_endpoint_name . '-delete',
         '#value' => t('Delete API keys'),
+        '#limit_validation_errors' => $limit_validation_errors,
         '#submit' => array('_services_auth_apikeys_delete_user_apikeys_service_endpoint_submit'),
         '#states' => array(
           'visible' => array(
             '#edit-' . $services_endpoint_name . '-action-check' => array('checked' => TRUE),
           ),
         ),
+      );
+
+      // Edit API keys manually.
+      // The API keys edit form textfields are only shown if the checkbox is checked.
+      $form[$services_endpoint_name]['edit_check'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Edit manually'),
+        '#description' => t('Check this box if you want to edit manually API keys.'),
+        '#states' => array(
+          'visible' => array(
+            '#edit-' . $services_endpoint_name . '-action-check' => array('checked' => TRUE),
+          ),
+        ),
+      );
+      $form[$services_endpoint_name]['edit'] = array(
+        '#type' => 'fieldset',
+        '#title' => t('Are you really sure you want to edit API keys manually?'),
+        '#tree' => TRUE,
+        '#states' => array(
+          'visible' => array(
+            '#edit-' . $services_endpoint_name . '-edit-check' => array('checked' => TRUE),
+          ),
+        ),
+      );
+      $form[$services_endpoint_name]['edit']['api_key'] = array(
+        '#type' => 'textfield',
+        '#title' => t('API Key (%identifier - @parameter_type)', array('%identifier' => $authentication_settings['api_key']['identifier'], '@parameter_type' => $parameter_types[$authentication_settings['api_key']['parameter_type']])),
+        '#default_value' => $apikeys->api_key,
+        '#required' => TRUE,
+        '#element_validate' => array('_services_auth_apikeys_edit_apikey_validate'),
+      );
+      $form[$services_endpoint_name]['edit']['token'] = array(
+        '#type' => 'textfield',
+        '#title' => t('API Key (%identifier - @parameter_type)', array('%identifier' => $authentication_settings['token']['identifier'], '@parameter_type' => $parameter_types[$authentication_settings['token']['parameter_type']])),
+        '#default_value' => $apikeys->token,
+        '#required' => TRUE,
+        '#element_validate' => array('_services_auth_apikeys_edit_apikey_validate'),
+      );
+
+      if ($authentication_settings['extra_key']['enabled']) {
+        $form[$services_endpoint_name]['edit']['extra_key'] = array(
+          '#type' => 'textfield',
+          '#title' => t('API Key (%identifier - @parameter_type)', array('%identifier' => $authentication_settings['extra_key']['identifier'], '@parameter_type' => $parameter_types[$authentication_settings['extra_key']['parameter_type']])),
+          '#default_value' => $apikeys->extra_key,
+          '#required' => TRUE,
+          '#element_validate' => array('_services_auth_apikeys_edit_apikey_validate'),
+        );
+      }
+
+      // Save edited API keys button.
+      $form[$services_endpoint_name]['edit']['save'] = array(
+        '#type' => 'submit',
+        '#name' => $services_endpoint_name . '-edit',
+        '#value' => t('Save API keys'),
+        '#submit' => array('_services_auth_apikeys_save_user_apikeys_service_endpoint_submit'),
       );
     }
   }
@@ -469,4 +536,32 @@ function _services_auth_apikeys_delete_user_apikeys_service_endpoint_submit($for
   $values = drupal_array_get_nested_value($form_state['values'], array_slice($button['#array_parents'], 0, -1));
   services_auth_apikeys_delete_apikeys($form_state['values']['uid'], $values['service_endpoint']);
   drupal_set_message(t('The API keys for %service_endpoint service endpoint has been deleted.', array('%service_endpoint' => $values['service_endpoint'])));
+}
+
+/*
+ * API keys edit elements validation.
+ */
+function _services_auth_apikeys_edit_apikey_validate($element, &$form_state, $form) {
+  if (!preg_match('/^[a-zA-Z0-9-_]{43}$/i', $element['#value'])) {
+    form_error($element, t('The !element is not in the right format: 43 characters length, only letters, numbers, underscores and hyphens characters are allowed.', array('!element' => $element['#title'])));
+  }
+}
+
+/**
+ * Submit callback for updating manually the API Keys.
+ */
+function _services_auth_apikeys_save_user_apikeys_service_endpoint_submit($form, &$form_state) {
+  $button = $form_state['triggering_element'];
+  $values = drupal_array_get_nested_value($form_state['values'], array_slice($button['#array_parents'], 0, -2));
+  // Build the API keys values from submitted values.
+  $apikeys = array(
+    'api_key' => $values['edit']['api_key'],
+    'token' => $values['edit']['token'],
+  );
+  if (!empty($values['edit']['extra_key'])) {
+    $apikeys['extra_key'] = $values['edit']['extra_key'];
+  }
+  // Update edited API keys.
+  services_auth_apikeys_update_apikeys($form_state['values']['uid'], $values['service_endpoint'], array_keys($apikeys), $apikeys);
+  drupal_set_message(t('The API keys for %service_endpoint service endpoint has been updated.', array('%service_endpoint' => $values['service_endpoint'])));
 }
