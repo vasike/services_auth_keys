@@ -62,7 +62,7 @@ CONFIGURATION
   - Generate new API key (button): available only for the API keys that has this option enabled.
   - Delete API keys: empty the API keys for the given service endpoint,
     equivalent of disabling the service from user.
-  - Edit manually: checkbox to allow manual eidting of the API keys.
+  - Edit manually: checkbox to allow manual editing of the API keys.
   - Edit (manually) API Keys (subform): a sub(form) for editing manually the existing API keys.
     This is available only if the "Edit manually" checkbox is checked.
     Every API key element has validation so the values should meet be as the one generated.
