@@ -88,7 +88,7 @@ function _services_auth_apikeys_authenticate_call($settings, $method, $args) {
     }
     // Login for the API keys owner.
     if ($authentication_settings['user_login'] || $endpoint['user_login']) {
-      $_GLOBALS['user'] = $user;
+      $GLOBALS['user'] = $user;
     }
   }
 }
